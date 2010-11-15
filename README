@@ -1,0 +1,15 @@
+1.5AddOrderToJdocInclude_html.php.patch
+
+	Adds backwards-compatible 'order' attribute to <jdoc:include> so one can
+	specify the order that template includes get parsed in.
+
+	Eg. if one has customized versions "headnojs" and "footjs" of
+	JDocumentRendererHead, can write in template head
+		<jdoc:include "headnojs" order="1000">
+	and in template body (near the bottom)
+		<jdoc:include "footjs" order="1001">
+	so that javascript (added using addScript etc) appears at the bottom.
+
+	The patch is structured after the 1.6 beta version of _parseTemplate.
+
+	Idea taken from <http://forum.joomla.org/viewtopic.php?f=500&t=417739>.
