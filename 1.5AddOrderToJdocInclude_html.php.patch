@@ -1,0 +1,70 @@
+--- libraries/joomla/document/html/html.php
++++ libraries/joomla/document/html/html.php
+@@ -367,7 +367,7 @@
+ 	 */
+ 	function _parseTemplate($data)
+ 	{
+-		$replace = array();
++		$template_tags = array();
+ 		$matches = array();
+ 		if(preg_match_all('#<jdoc:include\ type="([^"]+)" (.*)\/>#iU', $data, $matches))
+ 		{
+@@ -377,18 +377,53 @@
+ 
+ 			$count = count($matches[1]);
+ 
++			$order_vals = $order_idxs = $order_attribs = array();
++
+ 			for($i = 0; $i < $count; $i++)
+ 			{
+ 				$attribs = JUtility::parseAttributes( $matches[2][$i] );
+-				$type  = $matches[1][$i];
++				if (isset($attribs['order'])) {
++					$order_vals[] = (int) $attribs['order'];
++					$order_idxs[] = $i;
++					$order_attribs[] = $attribs;
++				} else {
++					$type  = $matches[1][$i];
++
++					$name  = isset($attribs['name']) ? $attribs['name'] : null;
++					$template_tags[$matches[0][$i]] = array('type'=>$type, 'name' => $name, 'attribs' => $attribs);
++				}
++			}
++
++			if ($order_idxs) {
++				array_multisort($order_vals, $order_idxs, $order_attribs);
++				for ($i = 0, $count = count($order_idxs); $i < $count; $i++) {
++					$j = $order_idxs[$i];
++					$type  = $matches[1][$j];
+ 
+-				$name  = isset($attribs['name']) ? $attribs['name'] : null;
+-				$replace[$i] = $this->getBuffer($type, $name, $attribs);
++					$attribs = $order_attribs[$i];
++					$name  = isset($attribs['name']) ? $attribs['name'] : null;
++					$template_tags[$matches[0][$j]] = array('type'=>$type, 'name' => $name, 'attribs' => $attribs);
++				}
+ 			}
++		}
++
++		return $this->_renderTemplate($template_tags, $data);
++	}
++
++	/**
++	 * Render pre-parsed template
++	 *
++	 * @return string rendered template
++	 */
++	function _renderTemplate($template_tags, $data) {
++		$replace = array();
++		$with = array();
+ 
+-			$data = str_replace($matches[0], $replace, $data);
++		foreach($template_tags AS $jdoc => $args) {
++			$replace[] = $jdoc;
++			$with[] = $this->getBuffer($args['type'], $args['name'], $args['attribs']);
+ 		}
+ 
+-		return $data;
++		return str_replace($replace, $with, $data);
+ 	}
+ }
